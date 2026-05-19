@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{PROJECT_TITLE}} | {{COMPANY_NAME}}</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600&family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- html2canvas + jspdf lazy-loaded on demand (PDF button click) -->
+
+    <style>
+        :root {
+            --bg: #1E2124;
+            --text: #FDF8F0;
+            --heading: #FFFFFF;
+            --border: rgba(255, 255, 255, 0.08);
+            --blue: #4A9EFF;
+            --red: #E54545;
+            --green: #34C759;
+            --font-display: 'DM Serif Display', serif;
+            --font-heading: 'Inter', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-hand: 'Caveat', cursive;
+        }
+
+        /* HARD RULES applied */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: none !important; /* Managed by custom cursor */
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 18px; /* Body text min 17-18px */
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-attachment: fixed;
+        }
+
+        /* SVG Noise -- fixed overlay */
+        .noise {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Background doodles removed */
+
+        /* Layout */
+        .section-wrapper {
+            position: relative;
+            width: 100vw;
+            padding: 80px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .content-container {
+            width: 100%;
+            max-width: 900px; /* Max-width 900px centered */
+            padding: 0 40px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .breathe-wider {
+            max-width: 1100px;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5 {
+            font-family: var(--font-heading);
+            color: var(--heading);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        h1 { font-family: var(--font-display); font-size: 64px; font-weight: 400; line-height: 1.1; margin-bottom: 24px; letter-spacing: -0.01em; }
+        h2 { font-family: var(--font-display); font-size: 72px; font-weight: 400; margin-bottom: 40px; position: relative; display: inline-block; }
+        h2 .h2-line { display: block; width: 0; height: 2px; background: rgba(255,255,255,0.4); margin-top: 12px; transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); }
+        h2.line-visible .h2-line { width: 100%; }
+        h3 { font-size: 24px; margin-bottom: 12px; }
+        h4 { font-size: 20px; margin-bottom: 8px; }
+        p { margin-bottom: 24px; }
+
+        /* Splash Screen */
+        #splash {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg); z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 20vh;
+            clip-path: circle(150% at 50% 40%);
+        }
+        .splash-pre { font-size: 18px; color: rgba(253, 248, 240, 0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+        .splash-name { font-family: var(--font-display); font-size: 80px; color: var(--heading); display: flex; overflow: hidden; }
+        .splash-line { width: 0; height: 2px; background: #ffffff; margin-top: 20px; box-shadow: 0 0 20px 4px rgba(255, 255, 255, 0.4), 0 0 60px 8px rgba(255, 255, 255, 0.15); }
+
+        /* Cursor */
+        #cursor-dot {
+            position: fixed; top: 0; left: 0; width: 12px; height: 12px;
+            border-radius: 50%; background: #ffffff;
+            transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 99999;
+            transition: width 0.6s cubic-bezier(0.16,1,0.3,1), height 0.6s cubic-bezier(0.16,1,0.3,1), background 0.6s cubic-bezier(0.16,1,0.3,1), backdrop-filter 0.3s, border 0.3s;
+            box-shadow: 0 0 15px 2px rgba(255,255,255,0.4);
+        }
+        #cursor-dot.hover-glass {
+            width: 50px !important; height: 50px !important;
+            background: rgba(255,255,255,0.06) !important;
+            backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255,255,255,0.15) !important;
+            box-shadow: none !important;
+        }
+        @keyframes rainbow-hue { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+        #cursor-dot.rainbow-mode {
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b59b6) !important;
+            background-size: 400% 400% !important;
+            animation: rainbow-orbit 4s ease-in-out infinite !important;
+            box-shadow: 0 0 16px 4px rgba(255, 180, 100, 0.25), 0 0 32px 8px rgba(100, 150, 255, 0.12) !important;
+            width: 16px !important; height: 16px !important;
+            border: 1px solid rgba(255,255,255,0.35) !important;
+        }
+        @keyframes rainbow-orbit {
+            0%   { background-position: 0% 0%;   box-shadow: 0 0 16px 4px rgba(255, 107, 107, 0.3), 0 0 32px 8px rgba(255, 107, 107, 0.1); }
+            25%  { background-position: 100% 0%; box-shadow: 0 0 16px 4px rgba(255, 217, 61, 0.3), 0 0 32px 8px rgba(255, 217, 61, 0.1); }
+            50%  { background-position: 100% 100%; box-shadow: 0 0 16px 4px rgba(107, 203, 119, 0.3), 0 0 32px 8px rgba(107, 203, 119, 0.1); }
+            75%  { background-position: 0% 100%;  box-shadow: 0 0 16px 4px rgba(77, 150, 255, 0.3), 0 0 32px 8px rgba(155, 89, 182, 0.1); }
+            100% { background-position: 0% 0%;   box-shadow: 0 0 16px 4px rgba(255, 107, 107, 0.3), 0 0 32px 8px rgba(255, 107, 107, 0.1); }
+        }
+
+        /* Header / Meta */
+        .project-title { font-size: 24px; color: rgba(253, 248, 240, 0.6); font-weight: 600; margin-bottom: 60px; }
+        .meta-info {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px;
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+            padding: 30px 0; margin-bottom: 80px; font-size: 17px;
+        }
+        .meta-label { display: block; font-weight: 700; color: var(--heading); margin-bottom: 8px; font-size: 21px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* Intro Letter */
+        .intro-letter {
+            font-family: var(--font-hand);
+            font-size: 56px;
+            line-height: 1.3;
+            max-width: 850px; margin: 0 auto;
+            padding: 20px 60px;
+            overflow: visible; word-break: normal; overflow-wrap: break-word; white-space: normal;
+        }
+        .intro-letter p { margin-bottom: 40px; }
+        .intro-letter p:first-child { font-size: 72px; }
+        .letter-word { display: inline-block; white-space: nowrap; margin-right: 14px; }
+        .letter-char { display: inline-block; }
+        .letter-divider { height: 1px; background: rgba(255,255,255,0.1); width: 0; margin: 30px 0; }
+
+        /* Blocks / Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 24px;
+            position: relative;
+            backdrop-filter: blur(10px);
+            transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .interactive:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px);
+        }
+        /* Section-colored hover glow -- set via JS data attribute */
+        .challenge-card.interactive:hover { box-shadow: 0 0 20px 2px rgba(229, 69, 69, 0.15), 0 0 60px 4px rgba(229, 69, 69, 0.08), 0 10px 30px -10px rgba(0,0,0,0.5); border-color: rgba(229, 69, 69, 0.3); }
+        .solution-card.interactive:hover { box-shadow: 0 0 20px 2px rgba(52, 199, 89, 0.15), 0 0 60px 4px rgba(52, 199, 89, 0.08), 0 10px 30px -10px rgba(0,0,0,0.5); border-color: rgba(52, 199, 89, 0.3); }
+        .scope-card.interactive:hover { box-shadow: 0 0 20px 2px rgba(74, 158, 255, 0.15), 0 0 60px 4px rgba(74, 158, 255, 0.08), 0 10px 30px -10px rgba(0,0,0,0.5); border-color: rgba(74, 158, 255, 0.3); }
+        .retainer-card.interactive:hover { box-shadow: 0 0 20px 2px rgba(74, 158, 255, 0.15), 0 0 60px 4px rgba(74, 158, 255, 0.08), 0 10px 30px -10px rgba(0,0,0,0.5); border-color: rgba(74, 158, 255, 0.3); }
+        .guarantee-box.interactive:hover { box-shadow: 0 0 25px 4px rgba(52, 199, 89, 0.12), 0 0 80px 8px rgba(52, 199, 89, 0.06); border-color: rgba(52, 199, 89, 0.4); }
+
+        /* Pulse Dots */
+        .pulse-dot-container { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+        .pulse-dot {
+            min-width: 14px; min-height: 14px; width: 14px; height: 14px;
+            flex-shrink: 0; border-radius: 50%; position: relative;
+        }
+        .pulse-dot::after {
+            content: ""; position: absolute; top: 50%; left: 50%;
+            width: 14px; height: 14px; border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: dot-ping 3s ease-out infinite;
+            animation-delay: var(--ping-delay, 0s);
+        }
+        .pulse-red { background: var(--red); box-shadow: 0 0 10px rgba(229, 69, 69, 0.4); }
+        .pulse-red::after { background: var(--red); }
+        .pulse-green { background: var(--green); box-shadow: 0 0 10px rgba(52, 199, 89, 0.4); }
+        .pulse-green::after { background: var(--green); }
+        @keyframes dot-ping {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            30% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+        /* Icon animations always run -- no pause/play to avoid freeze issues */
+
+        .block-label { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(253, 248, 240, 0.6); }
+        .block-title { display: flex; align-items: center; gap: 20px; font-size: 22px; font-weight: 700; color: var(--heading); margin-bottom: 16px; }
+        .block-desc { font-size: 20px; color: rgba(253, 248, 240, 0.8); }
+        .timeline-node .block-desc { font-size: 18px; }
+        .clause-item .block-desc { font-size: 18px; }
+
+        .animated-icon { width: 42px; height: 42px; stroke: var(--text); stroke-width: 1.5; fill: none; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .interactive:hover .animated-icon { transform: scale(1.15) translateY(-2px); }
+
+        /* Solution specific */
+        .solution-underline { position: relative; display: inline-block; }
+
+        /* Scope -- sticky stacking cards */
+        .scope-counter { font-size: 20px; font-weight: 600; color: var(--blue); margin-bottom: 30px; letter-spacing: 0.05em; }
+        #scope-list-container { position: relative; }
+        .scope-card {
+            position: relative;
+            background: rgba(30, 33, 36, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(74, 158, 255, 0.25);
+            border-left: 3px solid rgba(74, 158, 255, 0.5);
+            padding: 36px 40px;
+            margin-bottom: 16px;
+        }
+        .scope-card { position: sticky; }
+        .scope-item { display: flex; align-items: center; gap: 32px; }
+        .scope-icon-wrap {
+            flex-shrink: 0; width: 80px; height: 80px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(74, 158, 255, 0.06); border-radius: 16px;
+            border: 1px solid rgba(74, 158, 255, 0.12);
+        }
+        .scope-content { flex: 1; }
+        .scope-content strong { font-size: 22px; display: block; margin-bottom: 6px; color: var(--heading); }
+        .scope-content .block-desc { font-size: 20px; line-height: 1.5; }
+
+        /* Timeline -- line centered through circles */
+        .timeline-container { position: relative; margin-top: 60px; padding-left: 50px; }
+        .timeline-line-bg { position: absolute; left: 19px; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.05); }
+        .timeline-line-fill { position: absolute; left: 19px; top: 0; width: 2px; height: 0; background: var(--blue); z-index: 1; }
+        .timeline-node {
+            position: relative; margin-bottom: 60px; padding-left: 30px;
+        }
+        .timeline-circle {
+            position: absolute; left: -37px; top: 4px; width: 14px; height: 14px;
+            border-radius: 50%; background: var(--bg); border: 2px solid rgba(255,255,255,0.2);
+            z-index: 2; transition: all 0.3s ease;
+        }
+        .timeline-circle.active { border-color: var(--blue); background: var(--blue); transform: scale(1.3); box-shadow: 0 0 15px rgba(74, 158, 255, 0.4); }
+        .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .timeline-label { font-size: 22px; font-weight: 700; color: var(--heading); }
+        .timeline-days { background: rgba(74, 158, 255, 0.1); color: var(--blue); padding: 4px 12px; border-radius: 20px; font-size: 15px; font-weight: 600; white-space: nowrap; align-self: flex-start; }
+        .timeline-total { text-align: right; font-size: 24px; font-weight: 700; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 40px; }
+
+        /* Investment */
+        .investment-row { display: flex; padding: 20px 0; border-bottom: 1px solid var(--border); font-size: 19px; }
+        .investment-row span:nth-child(1) { flex: 1; }
+        .investment-row span:nth-child(2) { width: 120px; text-align: right; }
+        .investment-row span:nth-child(3) { width: 100px; text-align: center; }
+        .investment-row span:nth-child(4) { width: 120px; text-align: right; }
+        .investment-row.header { font-weight: 700; color: var(--heading); font-size: 16px; text-transform: uppercase; border-bottom: 2px solid rgba(255,255,255,0.2); }
+        .investment-summary { margin-top: 40px; border-top: 2px solid rgba(255,255,255,0.2); padding-top: 20px; }
+        .summary-total { display: flex; justify-content: space-between; font-size: 24px; font-weight: 700; margin-bottom: 30px; color: var(--heading); }
+        
+        .progress-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; margin: 40px 0 20px; overflow: hidden; }
+        .progress-bar-fill { width: 0; height: 100%; background: var(--blue); border-radius: 3px; }
+        
+        .retainer-block { margin-top: 60px; }
+        .retainer-card { background: rgba(74, 158, 255, 0.05); border: 1px solid rgba(74, 158, 255, 0.2); max-width: fit-content; margin-left: auto; margin-right: auto; }
+        .retainer-bullets { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+        .retainer-bullets li { display: flex; align-items: flex-start; gap: 12px; font-size: 18px; font-weight: 600; color: rgba(253, 248, 240, 0.85); line-height: 1.5; }
+        .retainer-bullet-dot {
+            flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%;
+            background: var(--blue); margin-top: 5px; position: relative;
+        }
+        .retainer-bullet-dot::after {
+            content: ""; position: absolute; top: 50%; left: 50%;
+            width: 10px; height: 10px; border-radius: 50%;
+            transform: translate(-50%, -50%); background: var(--blue);
+            animation: retainer-ping 3s ease-out infinite;
+            animation-delay: var(--ping-delay, 0s);
+        }
+        @keyframes retainer-ping {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            30% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+
+        /* Guarantee -- gold */
+        /* Guarantee Typewriter Card */
+        .guarantee-typewriter-card {
+            background-color: #22252a; border-left: 3px solid #D4AF37; border-radius: 16px;
+            padding: 2.5rem; max-width: 650px; margin: 2rem auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(212,175,55,0.05);
+            color: #FDF8F0; position: relative; overflow: hidden; line-height: 1.5;
+        }
+        .guarantee-typewriter-card::before {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 16px; box-shadow: inset 0 0 15px rgba(212,175,55,0.1); pointer-events: none;
+        }
+        .guarantee-typewriter-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem; }
+        .guarantee-typewriter-dot { width: 8px; height: 8px; background: #D4AF37; border-radius: 50%; animation: gt-pulse 2s infinite; }
+        @keyframes gt-pulse { 0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.6); } 70% { box-shadow: 0 0 0 8px rgba(212,175,55,0); } 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); } }
+        .guarantee-typewriter-status { color: #D4AF37; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.3rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; }
+        /* Shield icon -- top right, large, animated */
+        .guarantee-typewriter-icon {
+            position: absolute; top: 2.2rem; right: 2.2rem;
+            width: 96px; height: 96px;
+            animation: gt-float 4s ease-in-out infinite;
+        }
+        .guarantee-typewriter-icon svg {
+            width: 96px; height: 96px; stroke: #D4AF37; stroke-width: 1.2;
+            stroke-linecap: round; stroke-linejoin: round; fill: none;
+            filter: drop-shadow(0 0 12px rgba(212,175,55,0.3));
+        }
+        .guarantee-typewriter-icon::after {
+            content: ""; position: absolute; top: 50%; left: 50%;
+            width: 120px; height: 120px; transform: translate(-50%, -50%);
+            border-radius: 50%; border: 1px solid rgba(212,175,55,0.15);
+            animation: gt-ring 3s ease-in-out infinite;
+        }
+        @keyframes gt-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes gt-ring {
+            0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
+        }
+        .guarantee-typewriter-title { font-size: 2rem; font-weight: 500; margin: 0 0 1rem 0; color: #FDF8F0; font-family: var(--font-heading); }
+        .guarantee-typewriter-body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.35rem; line-height: 1.7; color: rgba(253,248,240,0.9); }
+        .guarantee-typewriter-cursor { display: inline-block; color: #D4AF37; font-weight: bold; margin-left: 2px; animation: gt-blink 1s step-end infinite; }
+        @keyframes gt-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Terms */
+        .clause-item { margin-bottom: 40px; }
+        .clause-num { color: var(--blue); font-size: 15px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+        .clause-item ul { margin-left: 24px; margin-top: 12px; }
+        .clause-item li { margin-bottom: 8px; }
+
+        /* Acceptance / CTA */
+        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 60px; }
+        .sig-block { display: flex; flex-direction: column; gap: 16px; }
+        .sig-box, .date-box {
+            background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+            border-radius: 8px; height: 80px; display: flex; align-items: center; padding: 0 20px;
+            font-size: 18px; color: rgba(255,255,255,0.4); transform-origin: center;
+            transition: box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer !important;
+        }
+        .sig-box:hover, .date-box:hover {
+            box-shadow: 0 0 20px 4px rgba(255,255,255,0.08), 0 0 50px 8px rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.3);
+        }
+        .date-box { height: 50px; }
+        /* Signature modal */
+        .sig-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 50000; align-items: center; justify-content: center; }
+        .sig-modal.open { display: flex; }
+        .sig-modal-inner { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; }
+        .sig-modal h3 { color: var(--heading); margin-bottom: 16px; }
+        .sig-canvas { width: 100%; height: 150px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; cursor: crosshair !important; touch-action: none; }
+        .sig-modal-btns { display: flex; gap: 12px; margin-top: 16px; }
+        .sig-modal-btns button { padding: 10px 24px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: var(--heading); font-size: 16px; cursor: pointer !important; transition: background 0.3s; }
+        .sig-modal-btns button:hover { background: rgba(255,255,255,0.1); }
+        .sig-modal-btns button.primary { background: rgba(74,158,255,0.2); border-color: rgba(74,158,255,0.4); }
+        .sig-signed { font-family: var(--font-hand); font-size: 28px; color: var(--heading); }
+        /* Viewport-activated glow -- works on all devices (mirrors hover styles) */
+        .challenge-card.viewport-active { box-shadow: 0 0 20px 2px rgba(229, 69, 69, 0.15), 0 0 60px 4px rgba(229, 69, 69, 0.08), 0 10px 30px -10px rgba(0,0,0,0.5); border-color: rgba(229, 69, 69, 0.3); transform: translateY(-2px); }
+        .solution-card.viewport-active { box-shadow: 0 0 20px 2px rgba(52, 199, 89, 0.15), 0 0 60px 4px rgba(52, 199, 89, 0.08), 0 10px 30px -10px rgba(0,0,0,0.5); border-color: rgba(52, 199, 89, 0.3); transform: translateY(-2px); }
+        .retainer-card.viewport-active { box-shadow: 0 0 20px 2px rgba(74, 158, 255, 0.15), 0 0 60px 4px rgba(74, 158, 255, 0.08), 0 10px 30px -10px rgba(0,0,0,0.5); border-color: rgba(74, 158, 255, 0.3); transform: translateY(-2px); }
+        .guarantee-typewriter-card.viewport-active { box-shadow: 0 0 25px 4px rgba(212, 175, 55, 0.15), 0 0 80px 8px rgba(212, 175, 55, 0.08); border-color: rgba(212, 175, 55, 0.5); transform: translateY(-2px); }
+
+        .sig-block.disabled { opacity: 0.35; pointer-events: none; }
+        .sig-block.disabled .sig-box, .sig-block.disabled .date-box { border-color: rgba(255,255,255,0.05); cursor: default !important; }
+        .sig-block.disabled .sig-box span, .sig-block.disabled .date-box span { color: rgba(255,255,255,0.15); }
+        .confirm-sig-btn { display: none; margin-top: 24px; padding: 16px 40px; border-radius: 12px; border: 1px solid rgba(74,158,255,0.4); background: rgba(74,158,255,0.15); color: var(--heading); font-size: 18px; font-weight: 600; cursor: pointer !important; transition: all 0.3s; width: 100%; text-align: center; }
+        .confirm-sig-btn:hover { background: rgba(74,158,255,0.3); border-color: rgba(74,158,255,0.6); }
+        .confirm-sig-btn.visible { display: block; }
+        .confirm-sig-btn:disabled { opacity: 0.4; pointer-events: none; }
+        .confirm-status { margin-top: 12px; font-size: 21px; color: rgba(74,158,255,0.8); text-align: center; display: none; }
+
+        .cta-wrapper { display: flex; justify-content: center; margin-top: 50px; margin-bottom: 40px; }
+        .cta-btn {
+            position: relative; padding: 22px 48px; border-radius: 100px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(255, 215, 100, 0.08), rgba(212, 175, 55, 0.12));
+            background-size: 200% 200%;
+            animation: cta-shimmer 4s ease-in-out infinite;
+            backdrop-filter: blur(20px);
+            color: var(--heading); font-size: 20px; font-weight: 700; text-decoration: none;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            z-index: 1; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 1 !important;
+            box-shadow: 0 0 30px 4px rgba(212, 175, 55, 0.08);
+        }
+        .cta-btn:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 40px 8px rgba(212, 175, 55, 0.15), 0 0 80px 16px rgba(212, 175, 55, 0.06);
+            border-color: rgba(212, 175, 55, 0.5);
+        }
+        @keyframes cta-shimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+
+        /* Hidden by default -- GSAP animates in, safety fallback at 4s restores if GSAP fails */
+        .gsap-rev, .scope-card, .gsap-timeline-node, .gsap-sig { opacity: 0; }
+        /* Hide all page content behind splash until it completes */
+        .page-content { opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0s; }
+        /* Hide splash text via CSS to prevent FOUC before GSAP loads */
+        .gsap-splash { opacity: 0; }
+        /* Loading spinner -- shown instantly while scripts load */
+        #loading-spinner {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg); z-index: 10001;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #loading-spinner::after {
+            content: ''; width: 32px; height: 32px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ============ MOBILE RESPONSIVE ============ */
+        @media (max-width: 768px) {
+            /* Cursor -- hide on touch */
+            * { cursor: auto !important; }
+            #cursor-dot { display: none !important; }
+
+            /* Typography */
+            body { font-size: 16px; }
+            h1 { font-size: 36px; }
+            h2 { font-size: 40px; }
+            h3 { font-size: 18px; }
+            .splash-name { font-size: 48px; }
+            .intro-letter { font-size: 33px; padding: 10px 16px; }
+            .intro-letter p:first-child { font-size: 42px; }
+            .project-title { font-size: 18px; }
+            .block-title { font-size: 17px; }
+            .block-desc { font-size: 18px; }
+            .scope-content .block-desc { font-size: 18px; }
+            .timeline-label { font-size: 17px; }
+            .summary-total { font-size: 18px; }
+            .cta-btn { font-size: 16px; padding: 16px 32px; width: 100%; }
+
+            /* Spacing */
+            .section-wrapper { padding: 40px 0; }
+            .content-container { padding: 0 16px; }
+            .glass-card { padding: 20px; }
+            .scope-card { padding: 20px 16px; }
+            .guarantee-typewriter-card { padding: 1.5rem; }
+            .guarantee-typewriter-icon { width: 72px; height: 72px; top: 1.5rem; right: 1.2rem; }
+            .guarantee-typewriter-icon svg { width: 72px; height: 72px; }
+            .guarantee-typewriter-icon::after { width: 90px; height: 90px; }
+            .guarantee-typewriter-body { font-size: 1.2rem; }
+            .guarantee-typewriter-title { font-size: 1.4rem; }
+            .meta-info { grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 0; margin-bottom: 40px; }
+            .meta-info > div:last-child { grid-column: 1 / -1; }
+            .timeline-container { padding-left: 36px; }
+            .timeline-node { padding-left: 16px; margin-bottom: 36px; }
+            .letter-word { margin-right: 8px; }
+            .clause-item { margin-bottom: 24px; }
+
+            /* Scope section -- mobile sticky stacking */
+            .scope-card { margin-bottom: 12px; }
+            .scope-icon-wrap { width: 56px; height: 56px; }
+            .scope-icon-wrap .animated-icon { width: 32px !important; height: 32px !important; }
+            .scope-item { gap: 12px; flex-direction: column; align-items: flex-start; }
+            .scope-content strong { font-size: 17px; }
+            .scope-header { padding: 12px 0 16px !important; }
+
+            /* Timeline circle reposition -- line centered on circle center */
+            .timeline-line-bg, .timeline-line-fill { left: 11px; }
+            .timeline-circle { left: -30px; width: 12px; height: 12px; }
+
+            /* Grid stacking */
+            .signatures { grid-template-columns: 1fr; gap: 30px; }
+
+            /* Investment rows -- stack vertically */
+            .investment-row { flex-direction: column; gap: 8px; font-size: 16px; padding: 16px 0; }
+            .investment-row.header { display: none; }
+            .investment-row span { display: flex; justify-content: space-between; width: 100%; text-align: left; }
+            .investment-row span:first-child { font-weight: 600; color: var(--heading); font-size: 17px; margin-bottom: 4px; display: block; }
+            .investment-row span:nth-child(2),
+            .investment-row span:nth-child(3),
+            .investment-row span:nth-child(4) { width: 100%; text-align: left; }
+            .investment-row span:not(:first-child)::before { color: rgba(255,255,255,0.4); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; min-width: 80px; }
+            .investment-row span:nth-child(2)::before { content: "Price"; }
+            .investment-row span:nth-child(3)::before { content: "QTY"; }
+            .investment-row span:nth-child(4)::before { content: "Subtotal"; }
+            .summary-total { flex-direction: column; gap: 4px; align-items: flex-end; }
+
+            /* Sig/Date boxes */
+            .sig-box { height: 60px; }
+            .date-box { height: 40px; }
+
+            /* Signature modal */
+            .sig-modal-inner { padding: 24px; max-width: 95vw; }
+            .sig-canvas { height: 120px; }
+            .sig-modal-btns button { padding: 8px 16px; font-size: 14px; }
+
+            /* CTA full width */
+            .cta-wrapper { margin-top: 30px; }
+        }
+
+        /* PDF capture mode -- flatten all scroll-driven layout */
+        .pdf-capture-mode .scope-card {
+            position: relative !important;
+            top: auto !important;
+            z-index: auto !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+        .pdf-capture-mode .scope-header {
+            position: relative !important;
+            top: auto !important;
+        }
+        .pdf-capture-mode .viewport-active {
+            box-shadow: none !important;
+            border-color: rgba(255,255,255,0.08) !important;
+        }
+        .pdf-capture-mode .gsap-rev,
+        .pdf-capture-mode .gsap-timeline-node,
+        .pdf-capture-mode .gsap-sig {
+            opacity: 1 !important;
+            transform: none !important;
+        }
+        .pdf-capture-mode .retainer-bullet-dot,
+        .pdf-capture-mode .pulse-dot {
+            animation: none !important;
+        }
+        /* Freeze all SVG animations at fully-visible state */
+        .pdf-capture-mode svg * {
+            animation: none !important;
+            stroke-dashoffset: 0 !important;
+            opacity: 1 !important;
+        }
+        .pdf-capture-mode svg animateMotion {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Loading spinner -- visible instantly while scripts download -->
+    <div id="loading-spinner"></div>
+
+    <div class="noise"></div>
+    
+    <!-- Custom Cursor -->
+    <div id="cursor-dot"></div>
+
+    <!-- Splash Screen -->
+    <div id="splash">
+        <div class="splash-pre gsap-splash">Prepared For</div>
+        <div class="splash-name gsap-splash" id="splash-name">{{FIRST_NAME}}</div>
+        <div class="splash-line gsap-splash"></div>
+    </div>
+
+    <div class="page-content" id="page-content">
+    <div class="section-wrapper" data-color="#ffffff" style="padding-top: 80px; padding-bottom: 30px;">
+        <div class="content-container">
+            <header class="gsap-rev">
+                <h1>Proposal For<br>{{COMPANY_NAME}}</h1>
+                <div class="project-title">{{PROJECT_TITLE}}</div>
+
+                <div class="meta-info">
+                    <div><span class="meta-label">Prepared For</span>{{CLIENT_NAME}}<br>{{COMPANY_NAME}}</div>
+                    <div><span class="meta-label">Prepared By</span>{{PROVIDER_NAME}}<br>{{AGENCY_NAME}}</div>
+                    <div><span class="meta-label">Date</span>{{DATE}}</div>
+                </div>
+            </header>
+
+            <div class="intro-letter gsap-rev" id="intro-letter-container">
+                <p>{{FIRST_NAME}},</p>
+                <p>{{INTRO_PARAGRAPH}}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Challenge Section -->
+    <div class="section-wrapper" data-color="#E54545">
+        <div class="content-container breathe-wider">
+            <h2 class="gsap-rev section-heading">The Challenge<span class="h2-line"></span></h2>
+            <p class="gsap-rev" style="max-width: 900px; margin: 0 auto 40px; font-size: 22px;">{{CHALLENGE_INTRO}}</p>
+
+            <div class="glass-card interactive gsap-rev challenge-card">
+                <div class="pulse-dot-container"><div class="pulse-dot pulse-red" style="--ping-delay: 0s;"></div><span class="block-label">Problem 01</span></div>
+                <div class="block-title"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#E54545" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><style>@keyframes ic1{to{transform:rotate(360deg);}}.ic1h{transform-origin:12px 12px;animation:ic1 15s linear infinite;opacity:0.75;}</style><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/><line class="ic1h" x1="12" y1="12" x2="17" y2="9"/></svg> {{PROBLEM_1_TITLE}}</div>
+                <div class="block-desc">{{PROBLEM_1_DESC}}</div>
+            </div>
+            <div class="glass-card interactive gsap-rev challenge-card">
+                <div class="pulse-dot-container"><div class="pulse-dot pulse-red" style="--ping-delay: 0.5s;"></div><span class="block-label">Problem 02</span></div>
+                <div class="block-title"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#E54545" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path id="ekg-path" d="M2 12h4l3-9 6 18 3-9h4"/><circle r="2" fill="#E54545" stroke="none"><animateMotion dur="3s" repeatCount="indefinite" calcMode="linear"><mpath href="#ekg-path"/></animateMotion></circle></svg> {{PROBLEM_2_TITLE}}</div>
+                <div class="block-desc">{{PROBLEM_2_DESC}}</div>
+            </div>
+            <div class="glass-card interactive gsap-rev challenge-card">
+                <div class="pulse-dot-container"><div class="pulse-dot pulse-red" style="--ping-delay: 1s;"></div><span class="block-label">Problem 03</span></div>
+                <div class="block-title"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#E54545" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><style>@keyframes ic3{to{transform:rotate(360deg);}}.ic3h{transform-origin:12px 14px;animation:ic3 3s linear infinite;}</style><circle cx="12" cy="14" r="8"/><line class="ic3h" x1="12" y1="14" x2="12" y2="9"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="9" y1="2" x2="15" y2="2"/><line x1="18" y1="8" x2="20" y2="6"/></svg> {{PROBLEM_3_TITLE}}</div>
+                <div class="block-desc">{{PROBLEM_3_DESC}}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Solution Section -->
+    <div class="section-wrapper" data-color="#34C759">
+        <div class="content-container breathe-wider">
+            <h2 class="gsap-rev section-heading">Our Solution<span class="h2-line"></span></h2>
+            <p class="gsap-rev" style="max-width: 900px; margin: 0 auto 40px; font-size: 22px;">{{SOLUTION_INTRO}}</p>
+
+            <div class="glass-card interactive gsap-rev solution-card">
+                <div class="pulse-dot-container"><div class="pulse-dot pulse-green" style="--ping-delay: 0s;"></div><span class="block-label">Solution 01</span></div>
+                <div class="block-title"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#34C759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><style>@keyframes ic4{0%{stroke-dashoffset:25;}50%,100%{stroke-dashoffset:0;}}.ic4d{stroke-dasharray:25;animation:ic4 3s ease-out infinite;}</style><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline class="ic4d" points="22 4 12 14.01 9 11.01"/></svg> <span class="solution-underline">{{SOLUTION_1_TITLE}}</span></div>
+                <div class="block-desc">{{SOLUTION_1_DESC}}</div>
+            </div>
+            <div class="glass-card interactive gsap-rev solution-card">
+                <div class="pulse-dot-container"><div class="pulse-dot pulse-green" style="--ping-delay: 0.5s;"></div><span class="block-label">Solution 02</span></div>
+                <div class="block-title"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#34C759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><style>@keyframes ic5{0%,100%{opacity:1;}50%{opacity:0.3;}}.ic5p{animation:ic5 2.5s ease-in-out infinite;}</style><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline class="ic5p" points="17 6 23 6 23 12"/></svg> <span class="solution-underline">{{SOLUTION_2_TITLE}}</span></div>
+                <div class="block-desc">{{SOLUTION_2_DESC}}</div>
+            </div>
+            <div class="glass-card interactive gsap-rev solution-card">
+                <div class="pulse-dot-container"><div class="pulse-dot pulse-green" style="--ping-delay: 1s;"></div><span class="block-label">Solution 03</span></div>
+                <div class="block-title"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#34C759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><style>@keyframes ic6{0%,100%{opacity:1;}40%{opacity:0.2;}45%{opacity:1;}50%{opacity:0.2;}55%{opacity:1;}}.ic6f{animation:ic6 3s ease-in-out infinite;}</style><polygon class="ic6f" points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <span class="solution-underline">{{SOLUTION_3_TITLE}}</span></div>
+                <div class="block-desc">{{SOLUTION_3_DESC}}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scope Section -->
+    <div class="section-wrapper" data-color="#4A9EFF">
+        <div class="content-container breathe-wider">
+            <div class="scope-header" style="position: -webkit-sticky; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 20px 0 24px; margin-bottom: 16px;">
+                <h2 class="section-heading" style="margin-bottom: 12px;">Scope of Work<span class="h2-line"></span></h2>
+                <h3>Phase 1: {{SCOPE_PHASE_NAME}}</h3>
+                <p style="color: rgba(253, 248, 240, 0.6); margin-bottom: 8px;">{{SCOPE_SUBTITLE}}</p>
+                <div class="scope-counter" id="scope-counter">0 of 16 Delivered</div>
+            </div>
+
+            <!-- Scope items populated in JS -->
+            <div id="scope-list-container"></div>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="section-wrapper" data-color="#4A9EFF">
+        <div class="content-container">
+            <h2 class="gsap-rev section-heading">Timeline<span class="h2-line"></span></h2>
+            <p class="gsap-rev" style="font-size: 22px;">One month from kickoff to full deployment with weekly progress updates.</p>
+
+            <div class="timeline-container gsap-rev">
+                <div class="timeline-line-bg"></div>
+                <div class="timeline-line-fill"></div>
+
+                <div class="timeline-node gsap-timeline-node">
+                    <div class="timeline-circle"></div>
+                    <div class="timeline-header"><span class="timeline-label">Discovery and Data Mapping</span><span class="timeline-days">2 days</span></div>
+                    <p class="block-desc">CRM access, form field audit, historical lead data export, scoring criteria workshop with your sales manager.</p>
+                </div>
+                <div class="timeline-node gsap-timeline-node">
+                    <div class="timeline-circle"></div>
+                    <div class="timeline-header"><span class="timeline-label">Scoring Engine Build</span><span class="timeline-days">5 days</span></div>
+                    <p class="block-desc">AI qualification model trained on your close/no-close data. 12-criteria scoring matrix. Real-time enrichment pipeline.</p>
+                </div>
+                <div class="timeline-node gsap-timeline-node">
+                    <div class="timeline-circle"></div>
+                    <div class="timeline-header"><span class="timeline-label">Routing and Response Automation</span><span class="timeline-days">4 days</span></div>
+                    <p class="block-desc">Qualified leads auto-booked to closer calendars. Unqualified routed to nurture sequences. Sub-60s personalized response on hot leads.</p>
+                </div>
+                <div class="timeline-node gsap-timeline-node">
+                    <div class="timeline-circle"></div>
+                    <div class="timeline-header"><span class="timeline-label">Testing and Calibration</span><span class="timeline-days">3 days</span></div>
+                    <p class="block-desc">Run scoring model against 200 historical leads. Calibrate thresholds with your team. A/B test response templates.</p>
+                </div>
+                <div class="timeline-node gsap-timeline-node">
+                    <div class="timeline-circle"></div>
+                    <div class="timeline-header"><span class="timeline-label">Launch and Training</span><span class="timeline-days">1 day</span></div>
+                    <p class="block-desc">Go live, team walkthrough, SOP documentation, Loom recording, 7-day support window.</p>
+                </div>
+            </div>
+            <div class="timeline-total gsap-rev"><span class="solution-underline">Total: {{TOTAL_DAYS}} business days</span></div>
+        </div>
+    </div>
+
+    <!-- Investment Section -->
+    <div class="section-wrapper" data-color="#4A9EFF" style="padding-bottom: 20px;">
+        <div class="content-container">
+            <h2 class="gsap-rev section-heading">Your Investment<span class="h2-line"></span></h2>
+            <div class="gsap-rev investment-block">
+                <p style="font-size: 22px;">Your investment is structured across project milestones as outlined below.</p>
+                
+                <div class="investment-row header">
+                    <span>Name</span><span>Price</span><span>QTY</span><span>Subtotal</span>
+                </div>
+                <div class="investment-row" style="border-bottom: none;">
+                    <span>{{SCOPE_PHASE_NAME}}</span>
+                    <span>{{TOTAL_PRICE}}</span><span>1</span><span>{{TOTAL_PRICE}}</span>
+                </div>
+
+                <div class="investment-summary">
+                    <div class="summary-total"><span>Total investment</span><span>{{TOTAL_PRICE}}</span></div>
+
+                    <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+
+                    <div class="investment-row" style="padding: 10px 0; border: none;"><span>Upon signing (50%)</span><span>{{MILESTONE_AMOUNT}}</span></div>
+                    <div class="investment-row" style="padding: 10px 0; border: none; font-weight: 700; color: var(--heading);"><span>On completion (50%)</span><span>{{MILESTONE_AMOUNT}}</span></div>
+                </div>
+
+                <p style="margin-top: 20px; font-size: 15px; color: rgba(253, 248, 240, 0.5); font-style: italic;">Phase 2 (AI Sales Enablement) scoped separately after Phase 1 results.</p>
+
+                <div class="retainer-block">
+                    <h3>Ongoing Optimization</h3>
+                    <p style="color: rgba(253, 248, 240, 0.7);">After delivery, I recommend continuing with monthly optimization to keep the system performing at its best.</p>
+                    <div class="glass-card retainer-card interactive">
+                        <div style="margin-bottom: 20px;">
+                            <span style="font-weight: 700; font-size: 30px; color: var(--heading); line-height: 1.3;">Full Optimization<br><span style="white-space: nowrap;"><span style="color: var(--blue); font-size: 25px;">+</span> <span style="color: var(--blue);">Unlimited</span> Maintenance</span></span>
+                        </div>
+                        <ul class="retainer-bullets">
+                            <li><span class="retainer-bullet-dot" style="--ping-delay: 0s;"></span>Monthly optimization review call</li>
+                            <li><span class="retainer-bullet-dot" style="--ping-delay: 0.4s;"></span>Daily Slack access for questions</li>
+                            <li><span class="retainer-bullet-dot" style="--ping-delay: 0.8s;"></span>System upgrades to newer AI models as they release</li>
+                            <li><span class="retainer-bullet-dot" style="--ping-delay: 1.2s;"></span>Template updates and prompt tuning based on performance data</li>
+                            <li><span class="retainer-bullet-dot" style="--ping-delay: 1.6s;"></span>Priority support and build hours for system improvements</li>
+                        </ul>
+                        <div style="margin-top: 20px;">
+                            <span style="font-weight: 400; font-size: 32px; color: var(--heading); font-family: var(--font-display); letter-spacing: -0.02em;">{{RETAINER_PRICE}}/mo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guarantee & Terms -->
+    <div class="section-wrapper" data-color="rainbow" style="padding-top: 10px;">
+        <div class="content-container">
+            <div class="guarantee-typewriter-card gsap-rev">
+                <div class="guarantee-typewriter-header">
+                    <div class="guarantee-typewriter-dot"></div>
+                    <div class="guarantee-typewriter-status">Guarantee Active</div>
+                </div>
+                <div class="guarantee-typewriter-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3 class="guarantee-typewriter-title">Our Guarantee</h3>
+                <div class="guarantee-typewriter-body">
+                    <span class="guarantee-typewriter-text"></span><span class="guarantee-typewriter-cursor">|</span>
+                </div>
+            </div>
+
+            <div style="margin: 50px 0 40px; height: 1px; background: rgba(255,255,255,0.1);" class="gsap-rev"></div>
+            <p class="gsap-rev block-desc" style="margin-bottom: 60px; font-size: 19px;">Once the lead qualification system is running, there is a natural extension into AI sales enablement: automated call prep, objection handling playbooks generated per lead, and post-call follow-up sequences personalized by qualification data. I will scope that after we see your Phase 1 results.</p>
+
+            <h2 class="gsap-rev section-heading">Terms of Engagement<span class="h2-line"></span></h2>
+
+            <div class="clause-item gsap-rev">
+                <div class="clause-num">Clause 01</div>
+                <h3>Scope of Work</h3>
+                <p class="block-desc">The Service Provider will deliver the project as described in the accompanying proposal document titled "{{PROJECT_TITLE}}" for {{COMPANY_NAME}}. The scope of work, deliverables, and timeline are defined in the proposal and incorporated by reference into this agreement.</p>
+                <p class="block-desc">Any work beyond the defined scope requires a written change order approved by both parties before work begins. Change orders will include updated timeline and investment.</p>
+            </div>
+            <div class="clause-item gsap-rev">
+                <div class="clause-num">Clause 02</div>
+                <h3>Payment Terms</h3>
+                <p class="block-desc">Total project investment: {{TOTAL_PRICE}}. Payable in milestones as follows:</p>
+                <ul class="block-desc">
+                    <li>Upon signing: {{MILESTONE_AMOUNT}} (50%)</li>
+                    <li>On completion: {{MILESTONE_AMOUNT}} (50%)</li>
+                </ul>
+                <p class="block-desc">Invoices are due within 5 business days of receipt. Work on subsequent phases begins upon receipt of the corresponding milestone. API costs (enrichment, scoring) are separate from project fee, estimated at under $50/month at current volume.</p>
+            </div>
+            <div class="clause-item gsap-rev">
+                <div class="clause-num">Clause 03</div>
+                <h3>Client Obligations</h3>
+                <p class="block-desc">To ensure timely delivery, the Client agrees to provide the following:</p>
+                <ul class="block-desc">
+                    <li>Admin access to CRM (HubSpot, Salesforce, or equivalent).</li>
+                    <li>Export of 6 months historical lead data (closed/lost with outcomes).</li>
+                    <li>Current lead intake form and routing logic documentation.</li>
+                    <li>Access to calendar booking system for routing integration.</li>
+                    <li>60-minute discovery session with sales manager during Week 1.</li>
+                    <li>Designate primary point of contact for threshold calibration.</li>
+                    <li>Respond to review requests within 2 business days.</li>
+                </ul>
+                <p class="block-desc">Delays caused by late access or materials may extend the project timeline accordingly.</p>
+            </div>
+            <div class="clause-item gsap-rev">
+                <div class="clause-num">Clause 04 & 05</div>
+                <h3>IP & Confidentiality</h3>
+                <p class="block-desc">Upon receipt of full payment, custom work product transfers to the Client. Service Provider retains rights to general methodologies. Both parties agree to keep confidential any proprietary information shared during this engagement (survives 2 years).</p>
+            </div>
+            <div class="clause-item gsap-rev">
+                <div class="clause-num">Clause 06, 07 & 08</div>
+                <h3>Support, Termination & Disputes</h3>
+                <p class="block-desc">Post-launch maintenance included as described. Either party may terminate with 7 days written notice. Disputes addressed through good faith negotiation, then binding arbitration.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acceptance & CTA -->
+    <div class="section-wrapper" data-color="rainbow" style="padding-top: 20px; padding-bottom: 100px;">
+        <div class="content-container">
+            <h2 class="gsap-rev section-heading">Acceptance<span class="h2-line"></span></h2>
+            <p class="block-desc gsap-rev">By signing below, both parties agree to proceed with the scope, investment, and terms outlined in this proposal.</p>
+            
+            <div class="signatures">
+                <div class="sig-block">
+                    <span style="font-size: 20px; color: var(--heading);"><strong>Client</strong><br>{{CLIENT_NAME}}</span>
+                    <div class="sig-box gsap-sig" id="client-sig-box" onclick="openSigPad('client')" style="cursor: none;">
+                        <span style="color: rgba(255,255,255,0.3);">Click to sign</span>
+                    </div>
+                    <span style="font-size: 14px; color: rgba(255,255,255,0.4);">Signature</span>
+                    <div class="date-box gsap-sig" id="client-date-box" onclick="setTodayDate('client')" style="cursor: none;">
+                        <span style="color: rgba(255,255,255,0.3);">Click to set date</span>
+                    </div>
+                    <span style="font-size: 14px; color: rgba(255,255,255,0.4);">Date</span>
+                </div>
+                <div class="sig-block">
+                    <span style="font-size: 20px; color: var(--heading);"><strong>Service Provider</strong><br>{{PROVIDER_NAME}}</span>
+                    <div class="sig-box gsap-sig" id="provider-sig-box" onclick="openSigPad('provider')" style="cursor: none;">
+                        <span style="color: rgba(255,255,255,0.3);">Click to sign</span>
+                    </div>
+                    <span style="font-size: 14px; color: rgba(255,255,255,0.4);">Signature</span>
+                    <div class="date-box gsap-sig" id="provider-date-box" onclick="setTodayDate('provider')" style="cursor: none;">
+                        <span style="color: rgba(255,255,255,0.3);">Click to set date</span>
+                    </div>
+                    <span style="font-size: 14px; color: rgba(255,255,255,0.4);">Date</span>
+                </div>
+            </div>
+
+            <!-- Signature Modal -->
+            <div class="sig-modal" id="sig-modal">
+                <div class="sig-modal-inner">
+                    <h3>Sign below</h3>
+                    <p style="font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 16px;">Draw your signature with your mouse or trackpad</p>
+                    <canvas class="sig-canvas" id="sig-canvas" width="440" height="150"></canvas>
+                    <div class="sig-modal-btns">
+                        <button onclick="clearSigPad()">Clear</button>
+                        <button class="primary" onclick="saveSig()">Save Signature</button>
+                        <button onclick="closeSigPad()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="confirm-sig-btn" id="confirm-sig-btn" onclick="confirmSignature()">Confirm Signature & Start Your Build</button>
+            <div class="confirm-status" id="confirm-status"></div>
+
+            <div style="text-align: center; font-size: 14px; color: rgba(253, 248, 240, 0.4); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 40px;">
+                {{AGENCY_NAME}} &middot; Confidential &middot; {{COMPANY_NAME}}
+            </div>
+        </div>
+    </div>
+    </div><!-- end .page-content -->
+
+    <!-- Generative scripts and GSAP integration -->
+    <script>
+        // Scope Data generator
+        const scopeItems = [
+            { title: "CRM Integration and Data Mapping", desc: "Connect to your CRM. Map form fields, lead sources, and pipeline stages to the scoring engine." },
+            { title: "Historical Lead Data Analysis", desc: "Export and analyze 6 months of closed/lost data to identify the 12 qualification criteria that predict close rate." },
+            { title: "AI Scoring Model", desc: "Custom-trained model that scores every inbound lead 0-100 in real time based on your specific close patterns." },
+            { title: "Company Enrichment Pipeline", desc: "Automated company lookup: revenue, headcount, industry, tech stack, funding stage. No manual research." },
+            { title: "Decision-Maker Detection", desc: "AI identifies whether the lead is a decision maker, influencer, or researcher based on title, LinkedIn, and form signals." },
+            { title: "Budget Qualification Layer", desc: "Cross-reference company size and role with your minimum engagement threshold. Flag mismatches before the call." },
+            { title: "Smart Lead Routing", desc: "Qualified leads auto-assigned to the right closer based on industry vertical, deal size, and calendar availability." },
+            { title: "Instant Response System", desc: "Personalized follow-up email within 60 seconds of form submission. Dynamic content based on lead score and company." },
+            { title: "Nurture Sequence for Below-Threshold Leads", desc: "Automated 30-day email sequence for leads that score below threshold. Re-qualifies and re-routes if signals change." },
+            { title: "Scoring Dashboard", desc: "Real-time view of lead scores, conversion rates by score band, and closer utilization metrics." },
+            { title: "Threshold Calibration Interface", desc: "Adjust scoring weights and qualification thresholds without touching code. Your sales manager owns this." },
+            { title: "Error Monitoring and Alerts", desc: "Automated detection of API failures, scoring anomalies, or routing errors. Slack notifications." },
+            { title: "System Documentation and SOP", desc: "Written guide covering how to operate, adjust thresholds, and troubleshoot the system." },
+            { title: "Recorded Walkthrough", desc: "15-minute Loom video demonstrating the full system end to end." },
+            { title: "Team Training Session", desc: "Live walkthrough with your sales team covering the new lead flow and dashboard." },
+            { title: "7-Day Post-Launch Support", desc: "Bug fixes, threshold tuning, and scoring calibration for 7 days after go-live." },
+        ];
+
+        // Clean Lucide-standard icons -- simple, no overlapping paths
+        const scopeIcons = [
+            '<path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><circle cx="7" cy="12" r="2"/><circle cx="17" cy="12" r="2"/><path d="M9 12h6"/>',
+            '<path d="M3 3v18h18"/><path d="M7 17l4-8 4 4 4-6"/>',
+            '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
+            '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+            '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+            '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+            '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>',
+            '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',
+            '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+            '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>',
+            '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+            '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+            '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
+            '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>',
+            '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+            '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 12 15 16 10"/>'
+        ];
+
+        const scopeContainer = document.getElementById('scope-list-container');
+        scopeItems.forEach((item, index) => {
+            const el = document.createElement('div');
+            el.className = 'glass-card interactive scope-card';
+            // Sticky stacking: desktop starts at 290px, mobile at 160px (smaller header)
+            if (window.innerWidth > 768) {
+                el.style.top = (290 + index * 4) + 'px';
+            } else {
+                el.style.top = (210 + index * 4) + 'px';
+            }
+            el.style.zIndex = 10 + index;
+            el.innerHTML = `
+                <div class="scope-item">
+                    <div class="scope-icon-wrap">
+                        <svg class="animated-icon" style="width: 48px; height: 48px; stroke: var(--blue);" viewBox="0 0 24 24">
+                            ${scopeIcons[index]}
+                        </svg>
+                    </div>
+                    <div class="scope-content">
+                        <strong>${item.title}</strong>
+                        <div class="block-desc">${item.desc}</div>
+                    </div>
+                </div>
+            `;
+            scopeContainer.appendChild(el);
+        });
+        // No extra padding -- cards stack naturally and scroll away as a unit with the section
+
+        // Wait for GSAP to be available (defer scripts may not be ready at DOMContentLoaded)
+        let splashDone = false;
+
+        function waitForGsap(callback) {
+            if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(() => waitForGsap(callback), 50);
+            }
+        }
+
+        // Nuclear fallback: if GSAP never loads at all, force everything visible after 6s
+        setTimeout(() => {
+            if (!splashDone) {
+                splashDone = true;
+                const spinner = document.getElementById('loading-spinner');
+                if (spinner) spinner.style.display = 'none';
+                document.getElementById('splash').style.display = 'none';
+                document.getElementById('page-content').style.visibility = 'visible';
+                document.getElementById('page-content').style.opacity = '1';
+                // Make all animated elements visible as static fallback
+                document.querySelectorAll('.gsap-rev, .scope-card, .gsap-timeline-node, .gsap-sig, .gsap-splash').forEach(el => {
+                    el.style.opacity = '1'; el.style.transform = 'none';
+                });
+            }
+        }, 6000);
+
+        // Start as soon as GSAP is ready (don't wait for images/fonts via window.onload)
+        waitForGsap(() => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Immediately hide animated elements via GSAP
+            gsap.set('.gsap-rev, .scope-card, .gsap-timeline-node, .gsap-sig', { opacity: 0 });
+
+            // Hide spinner, show splash
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) spinner.style.display = 'none';
+
+            // Safety Fallback -- only fires if splash already completed (prevents flash on mobile)
+            setTimeout(() => {
+                if (!splashDone) return;
+                document.querySelectorAll('.gsap-rev, .scope-card, .gsap-timeline-node, .gsap-sig').forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+                    if (inViewport) {
+                        const cs = getComputedStyle(el);
+                        if (cs.opacity === '0') {
+                            el.style.opacity = '1'; el.style.transform = 'none';
+                        }
+                    }
+                });
+                ScrollTrigger.refresh(true);
+            }, 4000);
+
+            // Override CSS .gsap-splash { opacity: 0 } now that GSAP controls the splash
+            gsap.set('.splash-name, .splash-line', { opacity: 1 });
+
+            // Splash Screen Animation
+            const tlSplash = gsap.timeline({
+                onComplete: () => {
+                    splashDone = true;
+                    document.getElementById('splash').style.display = 'none';
+                    // visibility first so GSAP can measure element positions
+                    document.getElementById('page-content').style.visibility = 'visible';
+                    initContentAnimations();
+                    // opacity last -- content fades in after scroll triggers are set
+                    document.getElementById('page-content').style.opacity = '1';
+                    ScrollTrigger.refresh();
+                }
+            });
+
+            // Split name into chars
+            const nameEl = document.getElementById('splash-name');
+            const nameText = nameEl.innerText;
+            nameEl.innerHTML = '';
+            nameText.split('').forEach(char => {
+                const span = document.createElement('span');
+                span.innerText = char;
+                span.style.opacity = 0;
+                span.style.transform = 'translateY(20px)';
+                nameEl.appendChild(span);
+            });
+
+            tlSplash.fromTo('.splash-pre', {opacity: 0}, {opacity: 1, duration: 1.2, ease: "power2.out", delay: 0.15})
+                    .to(nameEl.children, {opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: "elastic.out(1, 0.5)"}, "-=0.5")
+                    .to('.splash-line', {width: '100vw', duration: 0.75, ease: "power2.out"}, "-=0.3")
+                    .to('#splash', {clipPath: 'circle(0% at 50% 40%)', duration: 1, ease: "power3.inOut"}, "+=0.25");
+
+            // Cursor Logic -- skip entirely on mobile
+            if (window.innerWidth > 768) {
+                const cursorDot = document.getElementById('cursor-dot');
+                const xTo = gsap.quickTo(cursorDot, "x", {duration: 0.12, ease: "power3"});
+                const yTo = gsap.quickTo(cursorDot, "y", {duration: 0.12, ease: "power3"});
+
+                window.addEventListener("mousemove", e => {
+                    xTo(e.clientX);
+                    yTo(e.clientY);
+                });
+
+                // Breathing animation -- only during splash and acceptance sections
+                let breatheTween = gsap.to(cursorDot, {
+                    scale: 1.5, duration: 1.8, ease: "sine.inOut",
+                    yoyo: true, repeat: -1, paused: false
+                });
+
+                let currentCursorColor = '#4A9EFF';
+                document.querySelectorAll('.interactive').forEach(el => {
+                    el.addEventListener('mouseenter', () => {
+                        cursorDot.classList.add('hover-glass');
+                    });
+                    el.addEventListener('mouseleave', () => {
+                        cursorDot.classList.remove('hover-glass');
+                        if (!cursorDot.classList.contains('rainbow-mode')) {
+                            cursorDot.style.background = currentCursorColor;
+                            cursorDot.style.boxShadow = `0 0 15px 2px ${currentCursorColor}`;
+                        }
+                    });
+                });
+
+                // Section colors -- use ScrollTrigger for precise cursor color changes
+                function setCursorColor(color) {
+                    if (color === 'rainbow') {
+                        cursorDot.classList.add('rainbow-mode');
+                        currentCursorColor = '#ffffff';
+                        breatheTween.resume();
+                    } else if (color === '#ffffff') {
+                        // Top section -- white cursor with breathing
+                        cursorDot.classList.remove('rainbow-mode');
+                        currentCursorColor = '#ffffff';
+                        breatheTween.resume();
+                        cursorDot.style.background = '#ffffff';
+                        cursorDot.style.boxShadow = '0 0 15px 2px rgba(255,255,255,0.4)';
+                    } else {
+                        cursorDot.classList.remove('rainbow-mode');
+                        currentCursorColor = color;
+                        breatheTween.pause();
+                        gsap.to(cursorDot, {scale: 1, duration: 0.4, ease: "power2.out"});
+                        if(!cursorDot.classList.contains('hover-glass')) {
+                            cursorDot.style.background = color;
+                            cursorDot.style.boxShadow = `0 0 15px 2px ${color}`;
+                        }
+                    }
+                }
+                const sections = document.querySelectorAll('.section-wrapper[data-color]');
+                sections.forEach(sec => {
+                    const color = sec.getAttribute('data-color');
+                    ScrollTrigger.create({
+                        trigger: sec,
+                        start: "top 50%",
+                        end: "bottom 50%",
+                        onEnter: () => setCursorColor(color),
+                        onEnterBack: () => setCursorColor(color)
+                    });
+                });
+            }
+        });
+
+        function initContentAnimations() {
+            // Intro Letter Setup
+            const letterContainer = document.getElementById('intro-letter-container');
+            const paras = letterContainer.querySelectorAll('p');
+            paras.forEach((p, pIndex) => {
+                const words = p.innerText.split(' ');
+                p.innerHTML = '';
+                words.forEach(word => {
+                    const wordSpan = document.createElement('span');
+                    wordSpan.className = 'letter-word';
+                    word.split('').forEach(char => {
+                        const charSpan = document.createElement('span');
+                        charSpan.className = 'letter-char';
+                        charSpan.innerText = char;
+                        wordSpan.appendChild(charSpan);
+                    });
+                    p.appendChild(wordSpan);
+                });
+                if(pIndex < paras.length - 1) {
+                    const div = document.createElement('div');
+                    div.className = 'letter-divider';
+                    p.appendChild(div);
+                }
+            });
+
+            gsap.set(letterContainer, {opacity: 1}); // wrapper visible
+            const chars = letterContainer.querySelectorAll('.letter-char');
+            gsap.set(chars, {opacity: 0, y: -5});
+            
+            ScrollTrigger.create({
+                trigger: letterContainer,
+                start: "top 85%",
+                onEnter: () => {
+                    gsap.to(chars, {opacity: 1, y: 0, duration: 0.1, stagger: 0.02, ease: "none"});
+                    gsap.to('.letter-divider', {width: '100px', duration: 1.5, stagger: 0.5, ease: "power2.inOut", delay: 0.5});
+                }
+            });
+
+            // General Reveals (one-shot, no flickering)
+            document.querySelectorAll('.gsap-rev:not(.intro-letter)').forEach(el => {
+                gsap.fromTo(el, {y: 40, opacity: 0}, {
+                    y: 0, opacity: 1, duration: 0.8, ease: "power2.out",
+                    scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none none" }
+                });
+            });
+
+            // Section heading underlines
+            document.querySelectorAll('.section-heading').forEach(h2 => {
+                ScrollTrigger.create({
+                    trigger: h2, start: "top 80%",
+                    onEnter: () => h2.classList.add('line-visible'),
+                });
+            });
+
+            // Scope Cards (Snap toggleActions)
+            let currentScope = 0;
+            const counterEl = document.getElementById('scope-counter');
+            const isMobile = window.innerWidth <= 768;
+
+            document.querySelectorAll('.scope-card').forEach((el, i) => {
+                gsap.fromTo(el, {y: isMobile ? 20 : 40, opacity: 0, borderColor: "rgba(255,255,255,0.05)"}, {
+                    y: 0, opacity: 1, borderColor: "rgba(74,158,255,0.4)", duration: 0.4, ease: "back.out(1.2)",
+                    scrollTrigger: {
+                        trigger: el, start: isMobile ? "top 95%" : "top 85%", toggleActions: "play none none none",
+                        onEnter: () => {
+                            currentScope = i + 1;
+                            counterEl.innerText = `${currentScope} of ${scopeItems.length} Delivered`;
+                        }
+                    }
+                });
+            });
+
+            // Timeline line draw -- clip to first and last circle
+            const tlNodes = document.querySelectorAll('.gsap-timeline-node');
+            const tlLineFill = document.querySelector('.timeline-line-fill');
+            const tlLineBg = document.querySelector('.timeline-line-bg');
+            const timelineContainer = document.querySelector('.timeline-container');
+
+            // Calculate line bounds from circle positions
+            if (tlNodes.length > 0 && timelineContainer) {
+                const circles = Array.from(tlNodes).map(n => n.querySelector('.timeline-circle'));
+                const containerRect = timelineContainer.getBoundingClientRect();
+                const firstRect = circles[0].getBoundingClientRect();
+                const lastRect = circles[circles.length - 1].getBoundingClientRect();
+
+                const lineTop = (firstRect.top + firstRect.height / 2) - containerRect.top;
+                const lineHeight = (lastRect.top + lastRect.height / 2) - (firstRect.top + firstRect.height / 2);
+
+                // Each circle's offset from line start (0 = first circle, lineHeight = last)
+                const circleOffsets = circles.map(c => {
+                    const r = c.getBoundingClientRect();
+                    return (r.top + r.height / 2) - (firstRect.top + firstRect.height / 2);
+                });
+
+                // Clip both bg and fill lines to circle range
+                [tlLineBg, tlLineFill].forEach(el => {
+                    if (el) {
+                        el.style.top = lineTop + 'px';
+                        el.style.bottom = 'auto';
+                        el.style.height = el === tlLineFill ? '0px' : lineHeight + 'px';
+                    }
+                });
+
+                // Prepare node elements for activation
+                const nodeData = Array.from(tlNodes).map((node, i) => {
+                    const header = node.querySelector('.timeline-header');
+                    const desc = node.querySelector('.block-desc');
+                    gsap.set(node, {opacity: 1});
+                    gsap.set([header, desc], {opacity: 0, x: -20});
+                    return { node, circle: circles[i], header, desc, offset: circleOffsets[i], active: false };
+                });
+
+                // Single scrub animation -- line fill + circle activation driven by line height
+                gsap.to(tlLineFill, {
+                    height: lineHeight + 'px',
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: timelineContainer,
+                        start: "top 70%",
+                        end: "bottom 70%",
+                        scrub: 0.8,
+                        onUpdate: (self) => {
+                            const currentHeight = self.progress * lineHeight;
+                            nodeData.forEach(d => {
+                                if (currentHeight >= d.offset && !d.active) {
+                                    // Line reached this circle -- activate
+                                    d.active = true;
+                                    d.circle.classList.add('active');
+                                    gsap.fromTo(d.circle, {scale: 1}, {scale: 1.4, duration: 0.15, ease: "power2.out",
+                                        onComplete: () => gsap.to(d.circle, {scale: 1.3, duration: 0.25, ease: "elastic.out(1,0.5)"})
+                                    });
+                                    gsap.to(d.header, {opacity: 1, x: 0, duration: 0.5, ease: "power2.out"});
+                                    gsap.to(d.desc, {opacity: 1, x: 0, duration: 0.5, delay: 0.1, ease: "power2.out"});
+                                } else if (currentHeight < d.offset && d.active) {
+                                    // Scrolled back -- deactivate
+                                    d.active = false;
+                                    d.circle.classList.remove('active');
+                                    gsap.to(d.circle, {scale: 1, duration: 0.2, ease: "power2.in"});
+                                    gsap.to(d.header, {opacity: 0, x: -20, duration: 0.3, ease: "power2.in"});
+                                    gsap.to(d.desc, {opacity: 0, x: -20, duration: 0.3, ease: "power2.in"});
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
+            // Investment Progress Bar -- one-shot, stays filled
+            gsap.to('.progress-bar-fill', {
+                width: '100%', duration: 1.2, ease: "power2.out",
+                scrollTrigger: { trigger: '.investment-summary', start: "top 80%", toggleActions: "play none none none" }
+            });
+
+            // Signature Boxes -- animate in once, don't reverse (keeps them visible)
+            document.querySelectorAll('.gsap-sig').forEach((el, i) => {
+                gsap.fromTo(el, {scale: 0.8, opacity: 0}, {
+                    scale: 1, opacity: 1, duration: 0.6, delay: i * 0.12, ease: "back.out(1.4)",
+                    scrollTrigger: { trigger: '.signatures', start: "top 85%", toggleActions: "play none none none" }
+                });
+            });
+
+            // Apply role restrictions after GSAP init
+            initRoles();
+
+            // Guarantee Typewriter Animation
+            initGuaranteeTypewriter();
+
+            // Viewport-activated glow -- the single card closest to viewport center glows (all devices)
+            {
+                const glowCards = Array.from(document.querySelectorAll('.challenge-card, .solution-card, .retainer-card, .guarantee-typewriter-card'));
+                let activeGlowCard = null;
+                let glowTick = false;
+
+                function updateGlow() {
+                    glowTick = false;
+                    const centerY = window.innerHeight / 2;
+                    let closest = null;
+                    let closestDist = Infinity;
+
+                    glowCards.forEach(card => {
+                        const rect = card.getBoundingClientRect();
+                        const cardCenter = rect.top + rect.height / 2;
+                        const dist = Math.abs(cardCenter - centerY);
+                        // Only consider cards that are at least partially visible
+                        if (rect.bottom > 0 && rect.top < window.innerHeight && dist < closestDist) {
+                            closestDist = dist;
+                            closest = card;
+                        }
+                    });
+
+                    if (closest !== activeGlowCard) {
+                        if (activeGlowCard) activeGlowCard.classList.remove('viewport-active');
+                        if (closest) closest.classList.add('viewport-active');
+                        activeGlowCard = closest;
+                    }
+                }
+
+                window.addEventListener('scroll', () => {
+                    if (!glowTick) { glowTick = true; requestAnimationFrame(updateGlow); }
+                }, { passive: true });
+                updateGlow();
+
+                // Icon CSS animations always run -- no JS control needed
+            }
+        }
+
+        // === ROLE & SIGNATURE LOGIC ===
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageRole = urlParams.get('role') || 'client';
+        const signingId = urlParams.get('id') || null;
+        const STRIPE_URL = '{{STRIPE_LINK}}';
+        const WEBHOOK_URL = ''; // Will be set when Modal webhook is deployed
+
+        // Track signature state
+        const sigState = { client: null, provider: null, clientDate: null, providerDate: null };
+
+        // Disable the other party's signature box (called after GSAP init)
+        function initRoles() {
+            if (pageRole === 'client') {
+                const provBlock = document.getElementById('provider-sig-box')?.closest('.sig-block');
+                if (provBlock) provBlock.classList.add('disabled');
+            } else if (pageRole === 'provider') {
+                const clientBlock = document.getElementById('client-sig-box')?.closest('.sig-block');
+                if (clientBlock) clientBlock.classList.add('disabled');
+                // Load client signature from webhook if signing ID exists
+                if (signingId && WEBHOOK_URL) {
+                    fetch(WEBHOOK_URL + '/signature?id=' + signingId)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.clientSig) {
+                                const box = document.getElementById('client-sig-box');
+                                box.innerHTML = `<img src="${data.clientSig}" style="height: 60px; object-fit: contain; filter: brightness(1.2);" />`;
+                                sigState.client = data.clientSig;
+                            }
+                            if (data.clientDate) {
+                                const dbox = document.getElementById('client-date-box');
+                                dbox.innerHTML = `<span style="color: var(--heading); font-size: 16px;">${data.clientDate}</span>`;
+                                sigState.clientDate = data.clientDate;
+                            }
+                        }).catch(() => {});
+                }
+                // Change confirm button text for provider
+                const btn = document.getElementById('confirm-sig-btn');
+                if (btn) btn.textContent = 'Confirm Signature & Send Copies';
+            }
+        }
+
+        // Signature Pad Logic
+        let activeSigTarget = null;
+        let sigDrawing = false;
+        const sigCanvas = document.getElementById('sig-canvas');
+        const sigCtx = sigCanvas ? sigCanvas.getContext('2d') : null;
+
+        function openSigPad(who) {
+            activeSigTarget = who;
+            document.getElementById('sig-modal').classList.add('open');
+            if (sigCtx) {
+                sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+                sigCtx.strokeStyle = '#FDF8F0';
+                sigCtx.lineWidth = 2.5;
+                sigCtx.lineCap = 'round';
+                sigCtx.lineJoin = 'round';
+            }
+        }
+        function closeSigPad() {
+            document.getElementById('sig-modal').classList.remove('open');
+            activeSigTarget = null;
+        }
+        function clearSigPad() {
+            if (sigCtx) sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+        }
+        function saveSig() {
+            if (!activeSigTarget || !sigCanvas) return;
+            const dataURL = sigCanvas.toDataURL('image/png');
+            const box = document.getElementById(activeSigTarget + '-sig-box');
+            box.innerHTML = `<img src="${dataURL}" style="height: 60px; object-fit: contain; filter: brightness(1.2);" />`;
+            sigState[activeSigTarget] = dataURL;
+            closeSigPad();
+            checkShowConfirm();
+        }
+        function setTodayDate(who) {
+            const box = document.getElementById(who + '-date-box');
+            const today = new Date();
+            const formatted = today.toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'});
+            box.innerHTML = `<span style="color: var(--heading); font-size: 16px;">${formatted}</span>`;
+            sigState[who + 'Date'] = formatted;
+            checkShowConfirm();
+        }
+
+        function checkShowConfirm() {
+            const btn = document.getElementById('confirm-sig-btn');
+            if (!btn) return;
+            if (pageRole === 'client' && sigState.client && sigState.clientDate) {
+                btn.classList.add('visible');
+            } else if (pageRole === 'provider' && sigState.provider && sigState.providerDate) {
+                btn.classList.add('visible');
+            }
+        }
+
+        async function generatePDF() {
+            // Lazy-load html2canvas + jspdf (not needed until PDF button clicked)
+            if (typeof html2canvas === 'undefined') {
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                    s.onload = resolve; s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+            }
+            if (typeof window.jspdf === 'undefined') {
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                    s.onload = resolve; s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+            }
+
+            // === PRE-CAPTURE: Flatten all animated/sticky/scroll-driven layout ===
+            const savedStyles = [];
+
+            // 1. Force all GSAP-animated elements visible
+            document.querySelectorAll('.gsap-rev, .scope-card, .gsap-timeline-node, .gsap-sig').forEach(el => {
+                savedStyles.push({ el, opacity: el.style.opacity, transform: el.style.transform, position: el.style.position, top: el.style.top, zIndex: el.style.zIndex });
+                el.style.opacity = '1';
+                el.style.transform = 'none';
+            });
+
+            // 2. Unstick scope cards -- convert from sticky stack to normal flow
+            document.querySelectorAll('.scope-card').forEach(el => {
+                el.style.position = 'relative';
+                el.style.top = 'auto';
+                el.style.zIndex = 'auto';
+            });
+
+            // 3. Unstick scope header
+            const scopeHeader = document.querySelector('.scope-header');
+            const savedScopeHeader = scopeHeader ? { position: scopeHeader.style.position, top: scopeHeader.style.top, zIndex: scopeHeader.style.zIndex } : null;
+            if (scopeHeader) {
+                scopeHeader.style.position = 'relative';
+                scopeHeader.style.top = 'auto';
+            }
+
+            // 4. Unlock guarantee typewriter card height (may be locked by JS)
+            const gtCard = document.querySelector('.guarantee-typewriter-card');
+            const savedGtHeight = gtCard ? gtCard.style.height : null;
+            if (gtCard) gtCard.style.height = 'auto';
+
+            // 5. Force timeline circles active (filled) for static capture
+            document.querySelectorAll('.timeline-circle').forEach(c => c.classList.add('active'));
+            const tlLineFill = document.querySelector('.timeline-line-fill');
+            const savedTlHeight = tlLineFill ? tlLineFill.style.height : null;
+            const tlLineBg = document.querySelector('.timeline-line-bg');
+            if (tlLineFill && tlLineBg) tlLineFill.style.height = tlLineBg.style.height;
+
+            // 6. Force timeline text visible
+            document.querySelectorAll('.timeline-header, .gsap-timeline-node .block-desc').forEach(el => {
+                el.style.opacity = '1';
+                el.style.transform = 'none';
+            });
+
+            // 7. Hide UI chrome
+            document.getElementById('sig-modal').classList.remove('open');
+            document.getElementById('cursor-dot').style.display = 'none';
+            document.querySelector('.noise').style.display = 'none';
+            const confirmBtn = document.getElementById('confirm-sig-btn');
+            if (confirmBtn) confirmBtn.style.display = 'none';
+            const statusEl = document.getElementById('confirm-status');
+            if (statusEl) statusEl.style.display = 'none';
+
+            // 8. Add PDF-mode class for any CSS overrides
+            const pageContent = document.getElementById('page-content');
+            pageContent.classList.add('pdf-capture-mode');
+
+            // Wait for fonts to load + reflow
+            await document.fonts.ready;
+            await new Promise(r => setTimeout(r, 200));
+
+            const canvas = await html2canvas(pageContent, {
+                backgroundColor: '#1E2124',
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                windowWidth: 900,
+                onclone: (clonedDoc) => {
+                    // Ensure fonts are available in cloned document
+                    clonedDoc.querySelectorAll('.intro-letter, .intro-letter p, .letter-word, .letter-char').forEach(el => {
+                        el.style.fontFamily = "'Caveat', cursive";
+                    });
+                }
+            });
+
+            const { jsPDF } = window.jspdf;
+            const imgWidth = 210; // A4 width mm
+            const pageHeight = 297; // A4 height mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            let heightLeft = imgHeight;
+            let position = 0;
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft > 0) {
+                position = -(imgHeight - heightLeft);
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            // === POST-CAPTURE: Restore everything ===
+            pageContent.classList.remove('pdf-capture-mode');
+            savedStyles.forEach(s => {
+                s.el.style.opacity = s.opacity;
+                s.el.style.transform = s.transform;
+                s.el.style.position = s.position;
+                s.el.style.top = s.top;
+                s.el.style.zIndex = s.zIndex;
+            });
+            if (scopeHeader && savedScopeHeader) {
+                scopeHeader.style.position = savedScopeHeader.position;
+                scopeHeader.style.top = savedScopeHeader.top;
+                scopeHeader.style.zIndex = savedScopeHeader.zIndex;
+            }
+            if (gtCard) gtCard.style.height = savedGtHeight;
+            if (tlLineFill) tlLineFill.style.height = savedTlHeight;
+            if (confirmBtn) confirmBtn.style.display = '';
+            document.getElementById('cursor-dot').style.display = '';
+            document.querySelector('.noise').style.display = '';
+
+            return pdf;
+        }
+
+        async function confirmSignature() {
+            const btn = document.getElementById('confirm-sig-btn');
+            const statusEl = document.getElementById('confirm-status');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            statusEl.style.display = 'block';
+            statusEl.textContent = 'Generating signed document...';
+
+            try {
+                const pdf = await generatePDF();
+                const pdfBlob = pdf.output('blob');
+                const proposalTitle = document.title || 'Signed Proposal';
+
+                if (pageRole === 'client') {
+                    statusEl.textContent = 'Sending to service provider for counter-signature...';
+
+                    if (WEBHOOK_URL) {
+                        await fetch(WEBHOOK_URL + '/sign', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                clientSig: sigState.client,
+                                clientDate: sigState.clientDate,
+                                proposalUrl: window.location.origin + window.location.pathname,
+                                proposalTitle: proposalTitle,
+                                clientName: document.querySelector('.sig-block strong')?.nextSibling?.textContent?.trim() || 'Client'
+                            })
+                        });
+                    }
+
+                    // Also save PDF locally for the client
+                    pdf.save(proposalTitle + ' - Signed.pdf');
+
+                    statusEl.textContent = 'Redirecting to payment...';
+                    setTimeout(() => { window.location.href = STRIPE_URL; }, 2000);
+
+                } else if (pageRole === 'provider') {
+                    statusEl.textContent = 'Sending signed copies to both parties...';
+
+                    if (WEBHOOK_URL && signingId) {
+                        // Convert PDF blob to base64 for JSON transport
+                        const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+                        const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfArrayBuffer)));
+                        await fetch(WEBHOOK_URL + '/countersign', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                signingId: signingId,
+                                providerSig: sigState.provider,
+                                providerDate: sigState.providerDate,
+                                pdfBase64: pdfBase64
+                            })
+                        });
+                    }
+
+                    pdf.save(proposalTitle + ' - Fully Signed.pdf');
+                    statusEl.textContent = 'Done! Both parties will receive a signed copy via email.';
+                    btn.textContent = 'Signature Confirmed';
+                }
+            } catch (err) {
+                statusEl.textContent = 'Error: ' + err.message + '. Your signature was saved. Please try again.';
+                btn.disabled = false;
+                btn.textContent = pageRole === 'client' ? 'Confirm Signature & Start Your Build' : 'Confirm Signature & Send Copies';
+            }
+        }
+
+        if (sigCanvas) {
+            function getPos(e) {
+                const rect = sigCanvas.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                return { x: x * (sigCanvas.width / rect.width), y: y * (sigCanvas.height / rect.height) };
+            }
+            sigCanvas.addEventListener('mousedown', e => { sigDrawing = true; const p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); });
+            sigCanvas.addEventListener('mousemove', e => { if (!sigDrawing) return; const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); });
+            sigCanvas.addEventListener('mouseup', () => sigDrawing = false);
+            sigCanvas.addEventListener('mouseleave', () => sigDrawing = false);
+            sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); sigDrawing = true; const p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); }, {passive: false});
+            sigCanvas.addEventListener('touchmove', e => { e.preventDefault(); if (!sigDrawing) return; const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); }, {passive: false});
+            sigCanvas.addEventListener('touchend', () => sigDrawing = false);
+        }
+
+        // Guarantee Typewriter Animation
+        function initGuaranteeTypewriter() {
+            const card = document.querySelector('.guarantee-typewriter-card');
+            const textEl = document.querySelector('.guarantee-typewriter-text');
+            const cursorEl = document.querySelector('.guarantee-typewriter-cursor');
+            if (!card || !textEl || !cursorEl) return;
+
+            const fullText = "{{GUARANTEE_TEXT}}";
+
+            // Pre-measure: render full text to get natural card height, then lock it
+            textEl.textContent = fullText;
+            const naturalHeight = card.offsetHeight;
+            card.style.height = naturalHeight + 'px';
+            textEl.textContent = "";
+
+            const typeObj = { progress: 0 };
+            gsap.to(typeObj, {
+                progress: 1, duration: 4, ease: "none",
+                scrollTrigger: { trigger: card, start: "top 85%", once: true },
+                onUpdate: () => {
+                    const charCount = Math.floor(typeObj.progress * fullText.length);
+                    textEl.textContent = fullText.substring(0, charCount);
+                },
+                onComplete: () => {
+                    cursorEl.style.animation = "none";
+                    cursorEl.style.opacity = "1";
+                    const tl = gsap.timeline();
+                    for (let i = 0; i < 3; i++) {
+                        tl.set(cursorEl, { opacity: 0 }, "+=0.4")
+                          .set(cursorEl, { opacity: 1 }, "+=0.4");
+                    }
+                    tl.to(cursorEl, { opacity: 0, duration: 0.6, ease: "power2.inOut" }, "+=0.4");
+                }
+            });
+        }
+    </script>
+</body>
+</html>
