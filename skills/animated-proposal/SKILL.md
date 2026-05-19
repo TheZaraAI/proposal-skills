@@ -64,8 +64,8 @@ Synthesize the gathered context into every editable area of the template. This i
 | `{{CLIENT_NAME}}` | Prospect's full name |
 | `{{COMPANY_NAME}}` | Prospect's company |
 | `{{PROJECT_TITLE}}` | Descriptive project title from scope |
-| `{{PROVIDER_NAME}}` | Drew Longest |
-| `{{AGENCY_NAME}}` | SimpleSystems.ai |
+| `{{PROVIDER_NAME}}` | Provider's full name (the person sending the proposal) |
+| `{{AGENCY_NAME}}` | Provider's agency / company name |
 | `{{DATE}}` | Today's date |
 | `{{INTRO_PARAGRAPH}}` | Personal intro referencing discovery call specifics. Casual, not corporate. 2-3 sentences max. |
 | `{{CHALLENGE_INTRO}}` | One sentence framing their pain. Lead with the dollar impact. |
